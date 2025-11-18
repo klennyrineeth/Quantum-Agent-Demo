@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Quantum Agent Maze Demo</title>
+<style>
+    body {
+        background: #0b0b0b;
+        color: white;
+        font-family: Arial;
+        text-align: center;
+        padding-top: 20px;
+    }
+    h1 { color: #00eaff; }
+
+    .maze {
+        display: grid;
+        grid-template-columns: repeat(8, 50px);
+        grid-template-rows: repeat(8, 50px);
+        gap: 4px;
+        margin: 20px auto;
+    }
+
+    .cell {
+        width: 50px;
+        height: 50px;
+        background: #1a1a1a;
+        border-radius: 6px;
+        box-shadow: 0 0 4px #111;
+    }
+
+    .wall {
+        background: #003344;
+    }
+
+    .agent {
+        background: #00eaff;
+        border-radius: 6px;
+        box-shadow: 0 0 12px #00eaff;
+    }
+
+    .goal {
+        background: #ffdd33;
+        border-radius: 50%;
+        box-shadow: 0 0 12px #ffdd33;
+    }
+</style>
+</head>
+<body>
+
+<h1>Quantum Agent – Maze Navigation Demo</h1>
+<p>(Simulated RL Agent movement inside HTML)</p>
+
+<div id="maze" class="maze"></div>
+
+<script>
+// 0 = empty, 1 = wall
+const mazeLayout = [
+    [0,0,1,0,0,0,0,0],
+    [1,0,1,0,1,1,1,0],
+    [0,0,0,0,0,0,1,0],
+    [0,1,1,1,1,0,1,0],
+    [0,0,0,0,1,0,0,0],
+    [1,1,0,0,1,1,1,0],
+    [0,0,0,1,0,0,0,0],
+    [0,1,0,0,0,1,0,0],
+];
+
+const maze = document.getElementById("maze");
+
+// Build grid
+mazeLayout.forEach(row => {
+    row.forEach(cell => {
+        let div = document.createElement("div");
+        div.classList.add("cell");
+        if(cell === 1) div.classList.add("wall");
+        maze.appendChild(div);
+    });
+});
+
+// Agent path (you can replace with your RL path)
+const path = [
+    [0,0],
+    [1,1],
+    [2,1],
+    [2,2],
+    [2,3],
+    [3,3],
+    [4,3],
+    [4,4],
+    [4,5],
+    [5,5],
+    [6,5],
+    [6,6],
+    [6,7],
+    [7,7] // goal
+];
+
+let step = 0;
+
+function drawAgent() {
+    // Clear previous agent & goal
+    document.querySelectorAll(".agent").forEach(el => el.classList.remove("agent"));
+    document.querySelectorAll(".goal").forEach(el => el.classList.remove("goal"));
+
+    const [row, col] = path[step];
+
+    const index = row * 8 + col;
+    maze.children[index].classList.add("agent");
+
+    // Draw goal at final step
+    const [goalR, goalC] = path[path.length - 1];
+    const goalIndex = goalR * 8 + goalC;
+    maze.children[goalIndex].classList.add("goal");
+
+    // Move next
+    step++;
+    if(step < path.length){
+        setTimeout(drawAgent, 500); // Adjust speed here
+    }
+}
+
+drawAgent();
+</script>
+
+</body>
+</html>
