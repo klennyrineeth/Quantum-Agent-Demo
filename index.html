@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Agent Maze Simulation</title>
+    <style>
+        body {
+            background-color: #0A0A0F;
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        #maze {
+            display: grid;
+            grid-template-columns: repeat(8, 50px);
+            grid-template-rows: repeat(8, 50px);
+            gap: 2px;
+            margin-bottom: 20px;
+        }
+        .cell {
+            width: 50px;
+            height: 50px;
+            background-color: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .wall {
+            background-color: #000;
+        }
+        .agent {
+            background-color: #4DCCFF;
+        }
+        .goal {
+            background-color: #FFD700;
+            border-radius: 50%;
+        }
+        .buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        button {
+            background-color: #4DCCFF;
+            color: #0A0A0F;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #3BA8E0;
+        }
+        @keyframes celebrate {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); background-color: #FFD700; }
+            100% { transform: scale(1); }
+        }
+        .celebrate {
+            animation: celebrate 1s ease-in-out;
+        }
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #FFD700;
+            animation: fall 3s linear infinite;
+            pointer-events: none;
+        }
+        @keyframes fall {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <h1>Quantum Agent Maze Simulation</h1>
+    <div id="maze"></div>
+    <div class="buttons">
+        <button id="playBtn">Play</button>
+        <button id="restartBtn">Restart</button>
+        <button id="destroyBtn">Destroy Maze</button>
+        <button id="addWallsBtn">Add Random Walls</button>
+        <button id="moveGoalBtn">Move Goal</button>
+        <button id="resetBtn">Reset Maze</button>
+    </div>
+    <p>Created by Rineeth Chandavarapu</p>
+    <script>
+        const mazeSize = 8;
+        let maze = [
+            [0,0,0,1,0,0,0,0],
+            [0,1,0,1,0,1,1,0],
+            [0,1,0,0,0,0,1,0],
+            [0,1,1,1,1,0,1,0],
+            [0,0,0,0,1,0,1,0],
+            [0,1,1,0,1,0,1,0],
+            [0,0,1,0,0,0,1,0],
+            [0,0,0,0,0,0,0,0]
+        ];
+        const originalMaze = maze.map(row => [...row]);
+        let goal = [7, 7];
+        const originalGoal = [7, 7];
+        let path = [
+            [0,0], [0,1], [1,1], [2,1], [2,2], [3,2], [4,2], [4,3], [4,4], [5,4], [6,4], [7,4], [7,5], [7,6], [7,7]
+        ];
+        let currentStep = 0;
+        let intervalId = null;
+        const mazeEl = document.getElementById('maze');
+        const playBtn = document.getElementById('playBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const destroyBtn = document.getElementById('destroyBtn');
+        const addWallsBtn = document.getElementById('addWallsBtn');
+        const moveGoalBtn = document.getElementById('moveGoalBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        function findPath(start, end) {
+            const directions = [[0,1], [1,0], [0,-1], [-1,0]];
+            const queue = [[start, [start]]];
+            const visited = new Set();
+            visited.add(`${start[0]},${start[1]}`);
+            while (queue.length > 0) {
+                const [[x, y], currentPath] = queue.shift();
+                if (x === end[0] && y === end[1]) {
+                    return currentPath;
+                }
+                for (const [dx, dy] of directions) {
+                    const nx = x + dx;
+                    const ny = y + dy;
+                    if (nx >= 0 && nx < mazeSize && ny >= 0 && ny < mazeSize && maze[nx][ny] === 0 && !visited.has(`${nx},${ny}`)) {
+                        visited.add(`${nx},${ny}`);
+                        queue.push([[nx, ny], [...currentPath, [nx, ny]]]);
+                    }
+                }
+            }
+            return null; // No path found
+        }
+
+        function recalculatePath() {
+            const newPath = findPath([0, 0], goal);
+            if (newPath) {
+                path = newPath;
+            } else {
+                path = [[0, 0]]; // Stay at start if no path
+            }
+        }
+        function createMaze() {
+            mazeEl.innerHTML = '';
+            for (let i = 0; i < mazeSize; i++) {
+                for (let j = 0; j < mazeSize; j++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    if (maze[i][j] === 1) {
+                        cell.classList.add('wall');
+                    }
+                    if (i === goal[0] && j === goal[1]) {
+                        cell.classList.add('goal');
+                    }
+                    mazeEl.appendChild(cell);
+                }
+            }
+        }
+        function updateAgent() {
+            const cells = mazeEl.children;
+            for (let i = 0; i < cells.length; i++) {
+                cells[i].classList.remove('agent');
+                cells[i].classList.remove('celebrate');
+            }
+            if (currentStep < path.length) {
+                const [x, y] = path[currentStep];
+                const index = x * mazeSize + y;
+                cells[index].classList.add('agent');
+                if (x === goal[0] && y === goal[1]) {
+                    cells[index].classList.add('celebrate');
+                }
+            }
+        }
+        function animate() {
+            if (currentStep < path.length) {
+                updateAgent();
+                currentStep++;
+            } else {
+                clearInterval(intervalId);
+                playBtn.textContent = 'Play';
+            }
+        }
+        function startAnimation() {
+            if (intervalId) clearInterval(intervalId);
+            intervalId = setInterval(animate, 500);
+            playBtn.textContent = 'Pause';
+        }
+        function pauseAnimation() {
+            clearInterval(intervalId);
+            intervalId = null;
+            playBtn.textContent = 'Play';
+        }
+        function restart() {
+            currentStep = 0;
+            clearInterval(intervalId);
+            intervalId = null;
+            playBtn.textContent = 'Play';
+            createMaze();
+            updateAgent();
+        }
+        playBtn.addEventListener('click', () => {
+            if (intervalId) {
+                pauseAnimation();
+            } else {
+                startAnimation();
+            }
+        });
+        restartBtn.addEventListener('click', restart);
+        destroyBtn.addEventListener('click', () => {
+            for (let i = 0; i < mazeSize; i++) {
+                for (let j = 0; j < mazeSize; j++) {
+                    maze[i][j] = 0;
+                }
+            }
+            recalculatePath();
+            restart();
+        });
+        addWallsBtn.addEventListener('click', () => {
+            const numWalls = Math.floor(Math.random() * 6) + 15; // 15-20
+            let count = 0;
+            while (count < numWalls) {
+                const x = Math.floor(Math.random() * mazeSize);
+                const y = Math.floor(Math.random() * mazeSize);
+                if (maze[x][y] === 0 && !(x === 0 && y === 0) && !(x === goal[0] && y === goal[1])) {
+                    maze[x][y] = 1;
+                    count++;
+                }
+            }
+            recalculatePath();
+            restart();
+        });
+        moveGoalBtn.addEventListener('click', () => {
+            let newGoal = goal;
+            while (newGoal[0] === goal[0] && newGoal[1] === goal[1]) {
+                const x = Math.floor(Math.random() * mazeSize);
+                const y = Math.floor(Math.random() * mazeSize);
+                if (maze[x][y] === 0) {
+                    newGoal = [x, y];
+                }
+            }
+            goal = newGoal;
+            recalculatePath();
+            restart();
+        });
+        resetBtn.addEventListener('click', () => {
+            maze = originalMaze.map(row => [...row]);
+            goal = [...originalGoal];
+            recalculatePath();
+            restart();
+        });
+        createMaze();
+        updateAgent();
+    </script>
+</body>
+</html>
