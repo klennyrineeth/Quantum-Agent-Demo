@@ -105,7 +105,7 @@ Open the hosted HTML version (if GitHub Pages enabled):
 ## 🎥 **Demo Video**
 
 YouTube link (add your link here):
-👉 *[https://youtube.com/](https://youtu.be/z6N-2wGqvt8)...*
+👉 *[https://youtube.com/](https://youtu.be/cxCkdI-v18E)...*
 
 Or download the video from `/media/` folder.
 
